@@ -5,9 +5,6 @@
     <Setting Name="url" Type="(Web Service URL)" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
-    <Setting Name="username" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
-    </Setting>
     <Setting Name="apikey" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>

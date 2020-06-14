@@ -5,7 +5,6 @@ using System.Globalization;
 using System.Windows.Forms;
 using GitLabApiClient;
 using GitLabApiClient.Models.Pipelines;
-using GitLabApiClient.Models.Pipelines.Responses;
 
 namespace GitlabCleaner
 {
@@ -32,14 +31,19 @@ namespace GitlabCleaner
 
         private async void connectButton_Click(object sender, EventArgs e)
         {
-            if (Properties.Settings.Default.apikey.Length == 0)
+            if (Properties.Settings.Default.apikey.Length == 0 || Properties.Settings.Default.url.Length == 0)
             {
                 return;
             }
 
-            if (client == null)
+            try
             {
-                client = new GitLabClient(Properties.Settings.Default.url, Properties.Settings.Default.apikey);
+                listView1.UseWaitCursor = true;
+                if (client == null)
+                {
+                    client = new GitLabClient(Properties.Settings.Default.url, Properties.Settings.Default.apikey);
+                }
+                listView1.Items.Clear();
                 toolStripStatusLabel1.Text = Properties.Resources.Connecting;
                 toolStripProgressBar1.Style = ProgressBarStyle.Marquee;
                 GitLabApiClient.Models.Users.Responses.Session session = await client.Users.GetCurrentSessionAsync().ConfigureAwait(true);
@@ -52,6 +56,7 @@ namespace GitlabCleaner
                 };
                 userAvatar.LoadAsync();
                 userAvatar.LoadCompleted += delegate { toolStripLabel1.Image = userAvatar.Image; };
+                userAvatar.Dispose();
 
                 toolStripStatusLabel1.Text = Properties.Resources.DownloadingProjects;
                 IList<GitLabApiClient.Models.Projects.Responses.Project> projects = await client.Projects.GetAsync().ConfigureAwait(true);
@@ -60,8 +65,9 @@ namespace GitlabCleaner
                 toolStripProgressBar1.Maximum = projects.Count;
                 toolStripProgressBar1.Style = ProgressBarStyle.Continuous;
                 listView1.Items.Clear();
-                listView1.UseWaitCursor = true;
-                foreach (GitLabApiClient.Models.Projects.Responses.Project project in projects) {
+                
+                foreach (GitLabApiClient.Models.Projects.Responses.Project project in projects)
+                {
                     toolStripProgressBar1.PerformStep();
                     toolStripStatusLabel1.Text = String.Format(CultureInfo.CurrentCulture, Properties.Resources.DownloadingPipelineProgress, toolStripProgressBar1.Value, toolStripProgressBar1.Maximum, Math.Ceiling(toolStripProgressBar1.Value / toolStripProgressBar1.Maximum * 100.0));
                     ListViewGroup group = new ListViewGroup(project.NameWithNamespace);
@@ -85,6 +91,15 @@ namespace GitlabCleaner
 
                 selectDropdownButton.Enabled = true;
                 connectButton.Enabled = false;
+                
+            }
+            catch (Exception ex)
+            {
+                selectDropdownButton.Enabled = false;
+                MessageBox.Show(ex.Message, Properties.Resources.Error, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
                 toolStripStatusLabel1.Text = Properties.Resources.Ready;
                 toolStripProgressBar1.Value = 0;
                 listView1.UseWaitCursor = false;
